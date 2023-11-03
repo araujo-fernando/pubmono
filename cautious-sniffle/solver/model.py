@@ -1,8 +1,8 @@
 from __future__ import annotations
 from copy import deepcopy
 
-from expression import Expression
-from variables import RealVariable, BinVariable, IntVariable
+from .expression import Expression
+from .variables import RealVariable, BinVariable, IntVariable
 
 
 class Model:

@@ -7,8 +7,8 @@ from copy import deepcopy
 from tqdm import tqdm
 from time import time
 
-from model import Model
-from expression import Expression
+from .model import Model
+from .expression import Expression
 
 
 class Particle:

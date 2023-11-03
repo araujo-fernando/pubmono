@@ -6,8 +6,8 @@ import numpy as np
 from tqdm import tqdm
 from time import time
 
-from model import Model
-from expression import Expression
+from .model import Model
+from .expression import Expression
 
 
 class Individual:
@@ -43,7 +43,7 @@ class Individual:
             )
 
         mutant_vector = {var: mutate(var) for var in x_c}
-        selected_var = rd.sample(mutant_vector.keys(), 1)
+        selected_var = rd.sample(list(mutant_vector.keys()), 1)
 
         for var in mutant_vector:
             if (rd.uniform(0, 1) < cr or var == selected_var):

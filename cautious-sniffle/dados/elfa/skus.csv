@@ -1,0 +1,95 @@
+listaDeSkus,ids
+ESPECIALIDADES_162 Importado_NNC_S,sku_0
+ESPECIALIDADES_162 Importado_SS_R2,sku_1
+ESPECIALIDADES_162 Importado_SS_S,sku_2
+ESPECIALIDADES_162 Nacional_SS_R2,sku_3
+ESPECIALIDADES_162 Nacional_SS_S,sku_4
+ESPECIALIDADES_87 Importado_NNC_S,sku_5
+ESPECIALIDADES_87 Importado_SS_R1,sku_6
+ESPECIALIDADES_87 Importado_SS_R2,sku_7
+ESPECIALIDADES_87 Importado_SS_S,sku_8
+ESPECIALIDADES_87 Nacional_NNC_S,sku_9
+ESPECIALIDADES_87 Nacional_SS_R2,sku_10
+ESPECIALIDADES_87 Nacional_SS_S,sku_11
+ESPECIALIDADES_Isento_NNC_S,sku_12
+ESPECIALIDADES_Isento_SS_R2,sku_13
+ESPECIALIDADES_Isento_SS_S,sku_14
+ESPECIALIDADES_Tributado Importado_NNC_S,sku_15
+ESPECIALIDADES_Tributado Importado_SS_R1,sku_16
+ESPECIALIDADES_Tributado Importado_SS_R2,sku_17
+ESPECIALIDADES_Tributado Importado_SS_S,sku_18
+ESPECIALIDADES_Tributado Nacional_NNC_S,sku_19
+ESPECIALIDADES_Tributado Nacional_SS_R2,sku_20
+ESPECIALIDADES_Tributado Nacional_SS_S,sku_21
+GENERICO_162 Importado_NNC_S,sku_22
+GENERICO_162 Importado_SS_S,sku_23
+GENERICO_162 Nacional_NNC_S,sku_24
+GENERICO_162 Nacional_SS_S,sku_25
+GENERICO_87 Importado_SS_S,sku_26
+GENERICO_87 Nacional_NNC_S,sku_27
+GENERICO_87 Nacional_SS_R3,sku_28
+GENERICO_87 Nacional_SS_S,sku_29
+GENERICO_Isento_NNC_R1,sku_30
+GENERICO_Isento_NNC_S,sku_31
+GENERICO_Isento_SS_R3,sku_32
+GENERICO_Isento_SS_S,sku_33
+GENERICO_Tributado Importado_NNC_R1,sku_34
+GENERICO_Tributado Importado_NNC_S,sku_35
+GENERICO_Tributado Importado_SS_R1,sku_36
+GENERICO_Tributado Importado_SS_R3,sku_37
+GENERICO_Tributado Importado_SS_S,sku_38
+GENERICO_Tributado Nacional_NNC_R1,sku_39
+GENERICO_Tributado Nacional_NNC_S,sku_40
+GENERICO_Tributado Nacional_SS_R1,sku_41
+GENERICO_Tributado Nacional_SS_R3,sku_42
+GENERICO_Tributado Nacional_SS_S,sku_43
+MATERIAIS_162 Nacional_SS_S,sku_44
+MATERIAIS_87 Importado_SS_S,sku_45
+MATERIAIS_Isento_NNC_S,sku_46
+MATERIAIS_Isento_SS_S,sku_47
+MATERIAIS_Tributado Importado_NNC_S,sku_48
+MATERIAIS_Tributado Importado_SS_S,sku_49
+MATERIAIS_Tributado Nacional_NNC_S,sku_50
+MATERIAIS_Tributado Nacional_SS_R2,sku_51
+MATERIAIS_Tributado Nacional_SS_S,sku_52
+NUTRICAO_162 Nacional_SS_S,sku_53
+NUTRICAO_Isento_NNC_S,sku_54
+NUTRICAO_Isento_SS_S,sku_55
+NUTRICAO_Tributado Importado_NNC_S,sku_56
+NUTRICAO_Tributado Importado_SS_S,sku_57
+NUTRICAO_Tributado Nacional_NNC_S,sku_58
+NUTRICAO_Tributado Nacional_SS_S,sku_59
+SIMILAR_162 Importado_NNC_S,sku_60
+SIMILAR_162 Importado_SS_S,sku_61
+SIMILAR_162 Nacional_NNC_S,sku_62
+SIMILAR_162 Nacional_SS_S,sku_63
+SIMILAR_87 Importado_NNC_R1,sku_64
+SIMILAR_87 Importado_NNC_S,sku_65
+SIMILAR_87 Importado_SS_S,sku_66
+SIMILAR_87 Nacional_NNC_R1,sku_67
+SIMILAR_87 Nacional_NNC_S,sku_68
+SIMILAR_87 Nacional_SS_S,sku_69
+SIMILAR_Isento_NNC_R1,sku_70
+SIMILAR_Isento_NNC_S,sku_71
+SIMILAR_Isento_SS_R1,sku_72
+SIMILAR_Isento_SS_S,sku_73
+SIMILAR_Tributado Importado_NNC_R1,sku_74
+SIMILAR_Tributado Importado_NNC_S,sku_75
+SIMILAR_Tributado Importado_SS_R3,sku_76
+SIMILAR_Tributado Importado_SS_S,sku_77
+SIMILAR_Tributado Nacional_NNC_R1,sku_78
+SIMILAR_Tributado Nacional_NNC_S,sku_79
+SIMILAR_Tributado Nacional_SS_R1,sku_80
+SIMILAR_Tributado Nacional_SS_R3,sku_81
+SIMILAR_Tributado Nacional_SS_S,sku_82
+MATERIAIS_Tributado Importado_SS_S_RE,sku_83
+MATERIAIS_Tributado Nacional_SS_S_RE,sku_84
+MATERIAIS_Isento_SS_S_RE,sku_85
+MATERIAIS_Tributado Nacional_NNC_S_RE,sku_86
+NUTRICAO_Tributado Importado_SS_S_RE,sku_87
+NUTRICAO_Tributado Nacional_SS_S_RE,sku_88
+MATERIAIS_Tributado Importado_NNC_S_RE,sku_89
+NUTRICAO_Isento_SS_S_RE,sku_90
+NUTRICAO_Tributado Importado_NNC_S_RE,sku_91
+NUTRICAO_Tributado Nacional_NNC_S_RE,sku_92
+NUTRICAO_Isento_NNC_S_RE,sku_93

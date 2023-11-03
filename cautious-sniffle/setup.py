@@ -1,4 +1,8 @@
+from distutils.core import setup
+from Cython.Build import cythonize
 from setuptools import setup
+ 
+ext_options = {"compiler_directives": {"profile": True}, "annotate": True}
 
 setup(
     name="cautious_sniffle",
@@ -12,10 +16,12 @@ setup(
     install_requires=[
         "numpy",
         "tqdm",
+        "seaborn",
+        "matplotlib",
     ],
     classifiers=[
-        "Development Status :: 1 - Planning",
         "Intended Audience :: Science/Research",
-        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.11",
     ],
+    ext_modules = cythonize("solver/expression.pyx", **ext_options),
 )

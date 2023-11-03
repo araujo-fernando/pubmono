@@ -1,0 +1,9 @@
+
+
+
+variaveis:
+herdar de um tipo numérico nativo para tentar aumentar a performance
+
+expression:
+criar base expression e expression
+base expression deve ser composta por números nos dois lados

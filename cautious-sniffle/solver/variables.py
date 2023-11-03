@@ -7,7 +7,7 @@ import random as rd
 
 from enum import Enum, auto
 
-from expression import Expression
+from .expression import Expression
 
 
 class VarType(Enum):
