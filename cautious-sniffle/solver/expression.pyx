@@ -26,44 +26,18 @@ cdef class Expression:
         self.op = op
         self.b = b
 
-cdef double c_value(self):
-    cdef double val_a, val_b
-    try:
-        val_a = (<Expression>self.a).c_value()
-    except AttributeError:
-        val_a = <double>self.a
-    try:
-        val_b = (<Expression>self.b).c_value()
-    except AttributeError:
-        val_b = <double>self.b
+    @property
+    def value(self) -> Union[float, int]:
+        try:
+            val_a = self.a.value
+        except AttributeError:
+            val_a = self.a
+        try:
+            val_b = self.b.value
+        except AttributeError:
+            val_b = self.b
 
-    cdef double result
-    if self.op == op.add:
-        result = val_a + val_b
-    elif self.op == op.sub:
-        result = val_a - val_b
-    elif self.op == op.mul:
-        result = val_a * val_b
-    elif self.op == op.truediv:
-        result = val_a / val_b
-    elif self.op == op.floordiv:
-        result = <int>(val_a / val_b)
-    elif self.op == op.pow:
-        result = pow(val_a, val_b)
-    elif self.op == op.lt:
-        result = val_a < val_b
-    elif self.op == op.le:
-        result = val_a <= val_b
-    elif self.op == op.eq:
-        result = val_a == val_b
-    elif self.op == op.ge:
-        result = val_a >= val_b
-    elif self.op == op.gt:
-        result = val_a > val_b
-    else:
-        raise ValueError(f"Invalid operator: {self.op.__name__}")
-
-    return result
+        return self.op(val_a, val_b)
 
     def __repr__(self):
         op_name = self.op.__name__

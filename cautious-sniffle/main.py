@@ -7,6 +7,7 @@ from pprint import pprint
 from solver import *
 
 PLOT = False
+PATH = "dados/elfa"
 ## CONFIGURAÇÕES PARA SOLVERS
 PSO_SWARM = 50
 DE_POPULATION = 25
@@ -15,35 +16,30 @@ PSO_ITERATIONS = 9
 DE_ITERATIONS = PSO_ITERATIONS//3
 ## CONFIGURAÇÕES PARA MONTAGEM DO PROBLEMA
 T = 60
-TOTAL_NOS = 10
 
-model, gen_time = assemble_model(TOTAL_NOS, T)
+model, gen_time = assemble_model_from_data(PATH, "Fornecedor", "Cliente", T)
 
 print("Model Statistics:")
 print(f"{len(model._vars)} variables")
 print(f"{len(model._constraints)} constraints\n")
 print(f"Created in {gen_time} seconds\n")
 
+print("DE Solution:")
 de = DifferentialEvolutionOptimizer(
     model, max_iterations=DE_ITERATIONS, num_individuals=DE_POPULATION
 )
+print("With costs:")
+pprint(de.solution.objective_values)
+print(f"In {de.solve_time} seconds\n")
+
+print("PSO Solution:")
 pso = ParticleSwarmOptimizer(
     model, max_iterations=PSO_ITERATIONS, num_particles=PSO_SWARM
 )
-
-print("PSO Solution:")
-pso_solution = pso.optimize()
-# pprint({name: var._value for name, var in pso_solution._vars.items()})
 print("With costs:")
-pprint(pso_solution.objective_values)
+pprint(pso.solution.objective_values)
 print(f"In {pso.solve_time} seconds\n")
- 
-print("DE Solution:")
-de_solution = de.optimize()
-# pprint({name: var._value for name, var in de_solution._vars.items()})
-print("With costs:")
-pprint(de_solution.objective_values)
-print(f"In {de.solve_time} seconds\n")
+
 
 ## DE METRICS
 if not PLOT:

@@ -3,9 +3,11 @@ import os
 
 import random as rd
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+import math
 import json
 
 from time import time
@@ -214,7 +216,169 @@ def assemble_model(TOTAL_NOS=10, T=60) -> tuple[Model, float]:
     return model, (end_time - start_time)
 
 
+def assemble_model_from_data(path: str, source_level_name: str, sink_level_name: str, T=60) -> tuple[Model, float]:
+    model = Model()
+
+    ## CARREGAMENTO DOS DADOS BASE
+    start_time = time()
+
+    tabela_baseline = pd.read_csv(f"{path}/baseline.csv")
+    tabela_custo_nos = pd.read_csv(f"{path}/custo_nos.csv")
+    tabela_demanda = pd.read_csv(f"{path}/demanda.csv")
+    tabela_frete = pd.read_csv(f"{path}/frete.csv")
+    tabela_nos = pd.read_csv(f"{path}/nos_anonim.csv")
+    tabela_preco = pd.read_csv(f"{path}/valor_mercadoria.csv")
+    tabela_skus = pd.read_csv(f"{path}/skus_anonim.csv")
+
+    mercadorias = tabela_skus["ids"].tolist()
+    nos = tabela_nos["idn"].tolist()
+    nos_clientes = tabela_nos[tabela_nos["nivel"] == sink_level_name]["idn"].tolist()
+    nos_fornecedores = tabela_nos[tabela_nos["nivel"] == source_level_name]["idn"].tolist()
+    nos_intermediarios = list(set(nos) - set(nos_clientes) - set(nos_fornecedores))
+
+    todos_pares = tabela_frete[["origem", "destino"]].drop_duplicates().values.tolist()  
+    todos_pares_mercadorias = tabela_frete[["origem", "destino", "sku"]].drop_duplicates().values.tolist()
+    todos_pares_mercadorias = list(map(tuple, todos_pares_mercadorias))
+
+    fornecedores_mercadorias = tabela_frete[tabela_frete["origem"].isin(nos_fornecedores)][["origem", "sku"]].drop_duplicates().values.tolist()  
+    fornecedores_mercadorias = list(map(tuple, fornecedores_mercadorias))
+
+    ## GERAÇÃO DAS VARIÁVEIS
+    preco_max = 10**(math.log10(tabela_preco["valorMercadoria"].max())//1+1)
+    p_0_m = model.create_real_variables("p_0_", mercadorias, lb=0, ub=preco_max)
+    p_1_m = model.create_real_variables("p_1_", mercadorias, lb=0, ub=preco_max)
+    p_2_m = model.create_real_variables("p_2_", mercadorias, lb=0, ub=preco_max)
+
+    demanda_total = 10**(math.log10(tabela_demanda["demanda"].sum())//1+1)
+    s_0_i_m = model.create_integer_variables("s_0_", nos_intermediarios, lb=0, ub=demanda_total)
+    s_1_i_m = model.create_integer_variables("s_1_", nos_intermediarios, lb=0, ub=demanda_total)
+    s_2_i_m = model.create_integer_variables("s_2_", nos_intermediarios, lb=0, ub=demanda_total)
+
+    b_i = model.create_binary_variables("b_", nos)
+
+    frete_max = 10**(math.log10(tabela_frete["custo"].max())//1+1)
+    c_i_j_m = model.create_real_variables("c_", todos_pares_mercadorias, lb=0, ub=frete_max)
+    f_i_j_m = model.create_real_variables("f_", todos_pares_mercadorias, lb=0, ub=demanda_total)
+    g_j_m = model.create_integer_variables("g_", fornecedores_mercadorias, lb=0, ub=demanda_total)
+    w = model.create_real_variable("w", lb=0, ub=T)
+
+    ## GERAÇÃO DAS CONSTANTES
+    d_j_m = pd.DataFrame(tabela_demanda.groupby(["no", "sku"])["demanda"].sum()).to_dict()
+    h_i_m = {(i, m): h for i, h in tabela_custo_nos[["no", "capFornecimento"]].values for m in mercadorias}
+    e_i = tabela_custo_nos.set_index("no")["capExpedicao"].to_dict()
+    h_m = pd.DataFrame(0.1*tabela_preco.groupby("sku")["valorMercadoria"].mean()).to_dict()
+    v_i = tabela_custo_nos.set_index("no")["custoVariavelExpedicao"].to_dict()
+    u_i = tabela_custo_nos.set_index("no")["custoFixo"].to_dict()
+
+    alpha_m = {m: rd.uniform(0.001, 0.999) for m in mercadorias}
+    eps_m = {m: rd.uniform(0.001, 0.999) for m in mercadorias}
+    gama_m = {m: rd.uniform(0.001, 2) for m in mercadorias}
+    beta_m = {m: rd.uniform(0.001, 0.999) for m in mercadorias}
+    r_m = {m: alpha_m[m] * beta_m[m] / gama_m[m] for m in mercadorias}
+
+    ## GERAÇÃO DA FUNÇÃO OBJETIVO
+    objetivo = (
+        sum(
+            sum(
+                (
+                    (p_1_m.get(m, 0) - p_0_m.get(m, 0)) * s_0_i_m.get((i, m), 0)
+                    - (p_1_m.get(m, 0) - p_2_m.get(m, 0)) * s_1_i_m.get((i, m), 0)
+                    - (p_2_m.get(m, 0) + h_m.get(m, 0)) * s_2_i_m.get((i, m), 0)
+                )
+                for m in mercadorias
+            )
+            for i in nos_clientes
+        )
+        - sum(
+            sum(
+                (c_i_j_m[(i, j, m)] + v_i[i]) * f_i_j_m[(i, j, m)]
+                for i, j in todos_pares
+            )
+            for m in mercadorias
+        )
+        - sum(u_i.get(i, 0) * b_i[i] for i in nos)
+    )
+
+    model.set_objective(objetivo)
+    ## GERAÇÃO DAS RESTRIÇÕES DE IGUALDADE
+    r_18 = [
+        g_j_m.get((j, m), 0)
+        + s_0_i_m.get((j, m), 0)
+        + sum(f_i_j_m[(i, j, m)] for i in nos if (i, j) in todos_pares)
+        - d_j_m.get((j, m), 0)
+        + s_2_i_m.get((j, m), 0)
+        - sum(f_i_j_m[(j, k, m)] for k in nos if (j, k) in todos_pares)
+        for j in nos
+        for m in mercadorias
+    ]
+    model.insert_eq_zero_constraints(r_18)
+
+    ## GERAÇÃO DAS RESTRIÇÕES DE MENOR IGUAL
+    r_19 = [
+        sum(f_i_j_m[(i, j, m)] for j in nos if (i, j) in todos_pares) - e_i.get(i, 0)
+        for i in nos
+        for m in mercadorias
+    ]
+    r_20 = [
+        g_j_m.get((i, m), 0) - h_i_m.get((i, m), 0) for i in nos for m in mercadorias
+    ]
+    r_21 = [
+        d_j_m.get((j, m), 0)
+        - sum(f_i_j_m[(i, j, m)] for i in nos if (i, j) in todos_pares)
+        for j in nos_clientes
+        for m in mercadorias
+    ]
+    r_22 = [
+        (
+            s_0_i_m.get((i, m), 0) ** beta_m[m]
+            - r_m[m] * (w ** gama_m[m]) / (p_1_m[m] ** eps_m[m])
+        )
+        ** (1 / beta_m[m])
+        - s_1_i_m.get((i, m), 0)
+        for i in nos
+        for m in mercadorias
+    ]
+    r_23 = [
+        (
+            s_0_i_m.get((i, m), 0) ** beta_m[m]
+            - r_m[m] * (w ** gama_m[m]) / (p_1_m[m] ** eps_m[m])
+            - r_m[m] * (T ** gama_m[m] - w ** gama_m[m]) / (p_2_m[m] ** eps_m[m])
+        )
+        ** (1 / beta_m[m])
+        - s_2_i_m.get((i, m), 0)
+        for i in nos
+        for m in mercadorias
+    ]
+    r_24_1 = [p_0_m[m] - p_2_m[m] for m in mercadorias]
+    r_24_2 = [p_2_m[m] - p_1_m[m] for m in mercadorias]
+    r_26_1 = [
+        s_2_i_m.get((i, m), 0) - s_1_i_m.get((i, m), 0)
+        for i in nos
+        for m in mercadorias
+    ]
+    r_26_2 = [
+        s_1_i_m.get((i, m), 0) - s_0_i_m.get((i, m), 0)
+        for i in nos
+        for m in mercadorias
+    ]
+
+    model.insert_lt_zero_constraints(r_19)
+    model.insert_lt_zero_constraints(r_20)
+    model.insert_lt_zero_constraints(r_21)
+    model.insert_lt_zero_constraints(r_22)
+    model.insert_lt_zero_constraints(r_23)
+    model.insert_lt_zero_constraints(r_24_1)
+    model.insert_lt_zero_constraints(r_24_2)
+    model.insert_lt_zero_constraints(r_26_1)
+    model.insert_lt_zero_constraints(r_26_2)
+    end_time = time()
+
+    return model, (end_time - start_time)
+
+
+
 def bark(model):
+    # placeholder method to store optimization flux
     de = DifferentialEvolutionOptimizer(model, max_iterations=100, num_individuals=500)
     pso = ParticleSwarmOptimizer(model, max_iterations=300, num_particles=500)
     best_individual = de.optimize()
