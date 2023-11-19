@@ -37,7 +37,10 @@ cdef class Expression:
         except AttributeError:
             val_b = self.b
 
-        return self.op(val_a, val_b)
+        try:
+            return self.op(val_a, val_b)
+        except ZeroDivisionError:
+            return float("inf")
 
     def __repr__(self):
         op_name = self.op.__name__

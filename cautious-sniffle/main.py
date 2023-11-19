@@ -3,100 +3,122 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from pprint import pprint
+from multiprocessing import Manager, freeze_support
 
 from solver import *
 
 PLOT = False
-PATH = "dados/elfa"
+DATA_PATH = "dados/elfa"
 ## CONFIGURAÇÕES PARA SOLVERS
+ENABLE_PSO = False
+ENABLE_DE = True
+
 PSO_SWARM = 50
 DE_POPULATION = 25
 
-PSO_ITERATIONS = 9
-DE_ITERATIONS = PSO_ITERATIONS//3
+PSO_ITERATIONS = 0
+DE_ITERATIONS = 3
 ## CONFIGURAÇÕES PARA MONTAGEM DO PROBLEMA
 T = 60
 
-model, gen_time = assemble_model_from_data(PATH, "Fornecedor", "Cliente", T)
 
-print("Model Statistics:")
-print(f"{len(model._vars)} variables")
-print(f"{len(model._constraints)} constraints\n")
-print(f"Created in {gen_time} seconds\n")
+if __name__ == "__main__":
+    manager = Manager()
+    de_population = manager.list()
+    pso_population = manager.list()
 
-print("DE Solution:")
-de = DifferentialEvolutionOptimizer(
-    model, max_iterations=DE_ITERATIONS, num_individuals=DE_POPULATION
-)
-print("With costs:")
-pprint(de.solution.objective_values)
-print(f"In {de.solve_time} seconds\n")
+    if DATA_PATH:
+        model, gen_time = assemble_model_from_data(
+            DATA_PATH, "Fornecedor", "Cliente", T
+        )
+    else:
+        model, gen_time = assemble_model(10, T)
 
-print("PSO Solution:")
-pso = ParticleSwarmOptimizer(
-    model, max_iterations=PSO_ITERATIONS, num_particles=PSO_SWARM
-)
-print("With costs:")
-pprint(pso.solution.objective_values)
-print(f"In {pso.solve_time} seconds\n")
+    print("\nModel Statistics:")
+    print(f"{len(model._vars)} variables")
+    print(f"{len(model._constraints)} constraints")
+    print(f"Created in {gen_time} seconds\n")
 
+    if ENABLE_DE:
+        with RecursionLimiter(1_000_000):
+            de = DifferentialEvolutionOptimizer(
+                model,
+                de_population,
+                max_iterations=DE_ITERATIONS,
+                num_individuals=DE_POPULATION,
+            )
+            print("DE Solution:")
+            de.optimize(de_population)
+            print("With costs:")
+            pprint(de.solution.objective_values)
+            print(f"In {de.solve_time} seconds\n")
 
-## DE METRICS
-if not PLOT:
-    quit()
-evolution_data = de.evolution_data
-objectives = [[val[0] for val in it] for it in evolution_data]
-penalties = [[val[1] for val in it] for it in evolution_data]
+        ## DE METRICS
+        if not PLOT:
+            quit()
+        evolution_data = de.evolution_data
+        objectives = [[val[0] for val in it] for it in evolution_data]
+        penalties = [[val[1] for val in it] for it in evolution_data]
 
-for data in objectives:
-    data.sort()
-for data in penalties:
-    data.sort()
+        for data in objectives:
+            data.sort()
+        for data in penalties:
+            data.sort()
 
-objectives = list(map(list, zip(*objectives)))
-penalties = list(map(list, zip(*penalties)))
+        objectives = list(map(list, zip(*objectives)))
+        penalties = list(map(list, zip(*penalties)))
 
-objectives = np.array(objectives)
-min_value = objectives.min()
-max_value = objectives.max()
-objectives = (objectives - min_value) / (max_value - min_value)
+        objectives = np.array(objectives)
+        min_value = objectives.min()
+        max_value = objectives.max()
+        objectives = (objectives - min_value) / (max_value - min_value)
 
-penalties = np.array(penalties)
-min_value = penalties.min()
-max_value = penalties.max()
-penalties = (penalties - min_value) / (max_value - min_value)
+        penalties = np.array(penalties)
+        min_value = penalties.min()
+        max_value = penalties.max()
+        penalties = (penalties - min_value) / (max_value - min_value)
 
-objs_evo = sns.heatmap(objectives)
-plt.show()
+        objs_evo = sns.heatmap(objectives)
+        plt.show()
 
-pen_evo = sns.heatmap(penalties)
-plt.show()
+        pen_evo = sns.heatmap(penalties)
+        plt.show()
 
-## PSO METRICS
-evolution_data = pso.evolution_data
-objectives = [[val[0] for val in it] for it in evolution_data]
-penalties = [[val[1] for val in it] for it in evolution_data]
+    if ENABLE_PSO:
+        with RecursionLimiter(1_000_000):
+            print("PSO Solution:")
+            pso = ParticleSwarmOptimizer(
+                model, max_iterations=PSO_ITERATIONS, num_particles=PSO_SWARM
+            )
+            print("With costs:")
+            pprint(pso.solution.objective_values)
+            print(f"In {pso.solve_time} seconds\n")
 
-for data in objectives:
-    data.sort()
-for data in penalties:
-    data.sort()
+        ## PSO METRICS
+        evolution_data = pso.evolution_data
+        objectives = [[val[0] for val in it] for it in evolution_data]
+        penalties = [[val[1] for val in it] for it in evolution_data]
 
-objectives = list(map(list, zip(*objectives)))
-penalties = list(map(list, zip(*penalties)))
+        for data in objectives:
+            data.sort()
+        for data in penalties:
+            data.sort()
 
-objectives = np.array(objectives)
-min_value = objectives.min()
-max_value = objectives.max()
-objectives = (objectives - min_value) / (max_value - min_value)
+        objectives = list(map(list, zip(*objectives)))
+        penalties = list(map(list, zip(*penalties)))
 
-penalties = np.array(penalties)
-min_value = penalties.min()
-max_value = penalties.max()
-penalties = (penalties - min_value) / (max_value - min_value)
+        objectives = np.array(objectives)
+        min_value = objectives.min()
+        max_value = objectives.max()
+        objectives = (objectives - min_value) / (max_value - min_value)
 
-objs_evo = sns.heatmap(objectives)
-plt.show()
+        penalties = np.array(penalties)
+        min_value = penalties.min()
+        max_value = penalties.max()
+        penalties = (penalties - min_value) / (max_value - min_value)
 
-pen_evo = sns.heatmap(penalties)
-plt.show()
+        objs_evo = sns.heatmap(objectives)
+        plt.show()
+
+        pen_evo = sns.heatmap(penalties)
+        plt.show()

@@ -43,7 +43,7 @@ class _Variable:
 
     def __setattr__(self, name, value):
         if name == "value":
-            self.set_value(value)
+            self._value = np.clip(value, self.lb, self.ub)
         self.__dict__[name] = value
 
     def __repr__(self) -> str:

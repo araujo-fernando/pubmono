@@ -217,6 +217,7 @@ def assemble_model(TOTAL_NOS=10, T=60) -> tuple[Model, float]:
 
 
 def assemble_model_from_data(path: str, source_level_name: str, sink_level_name: str, T=60) -> tuple[Model, float]:
+    print(f"Assembling model")
     model = Model()
 
     ## CARREGAMENTO DOS DADOS BASE
@@ -244,6 +245,7 @@ def assemble_model_from_data(path: str, source_level_name: str, sink_level_name:
     fornecedores_mercadorias = list(map(tuple, fornecedores_mercadorias))
 
     ## GERAÇÃO DAS VARIÁVEIS
+    print(f"\tCreating variables")
     preco_max = 10**(math.log10(tabela_preco["valorMercadoria"].max())//1+1)
     p_0_m = model.create_real_variables("p_0_", mercadorias, lb=0, ub=preco_max)
     p_1_m = model.create_real_variables("p_1_", mercadorias, lb=0, ub=preco_max)
@@ -263,6 +265,7 @@ def assemble_model_from_data(path: str, source_level_name: str, sink_level_name:
     w = model.create_real_variable("w", lb=0, ub=T)
 
     ## GERAÇÃO DAS CONSTANTES
+    print(f"\tLoading constants")
     d_j_m = pd.DataFrame(tabela_demanda.groupby(["no", "sku"])["demanda"].sum()).to_dict()
     h_i_m = {(i, m): h for i, h in tabela_custo_nos[["no", "capFornecimento"]].values for m in mercadorias}
     e_i = tabela_custo_nos.set_index("no")["capExpedicao"].to_dict()
@@ -277,6 +280,7 @@ def assemble_model_from_data(path: str, source_level_name: str, sink_level_name:
     r_m = {m: alpha_m[m] * beta_m[m] / gama_m[m] for m in mercadorias}
 
     ## GERAÇÃO DA FUNÇÃO OBJETIVO
+    print("\tSetting objective function")
     objetivo = (
         sum(
             sum(
@@ -301,6 +305,7 @@ def assemble_model_from_data(path: str, source_level_name: str, sink_level_name:
 
     model.set_objective(objetivo)
     ## GERAÇÃO DAS RESTRIÇÕES DE IGUALDADE
+    print("\tSetting equality constraints")
     r_18 = [
         g_j_m.get((j, m), 0)
         + s_0_i_m.get((j, m), 0)
@@ -314,6 +319,7 @@ def assemble_model_from_data(path: str, source_level_name: str, sink_level_name:
     model.insert_eq_zero_constraints(r_18)
 
     ## GERAÇÃO DAS RESTRIÇÕES DE MENOR IGUAL
+    print("\tSetting inequality constraints")
     r_19 = [
         sum(f_i_j_m[(i, j, m)] for j in nos if (i, j) in todos_pares) - e_i.get(i, 0)
         for i in nos
@@ -362,6 +368,7 @@ def assemble_model_from_data(path: str, source_level_name: str, sink_level_name:
         for m in mercadorias
     ]
 
+    print("\tInserting constraints into model")
     model.insert_lt_zero_constraints(r_19)
     model.insert_lt_zero_constraints(r_20)
     model.insert_lt_zero_constraints(r_21)
@@ -372,6 +379,8 @@ def assemble_model_from_data(path: str, source_level_name: str, sink_level_name:
     model.insert_lt_zero_constraints(r_26_1)
     model.insert_lt_zero_constraints(r_26_2)
     end_time = time()
+
+    print(f"Model assembled finished")
 
     return model, (end_time - start_time)
 

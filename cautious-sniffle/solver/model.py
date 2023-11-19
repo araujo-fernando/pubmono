@@ -99,8 +99,18 @@ class Model:
             if var in self._vars:
                 self._vars[var].value = val  # type: ignore
 
+    def get_variables_values(self) -> dict[str, int | float]:
+        return {var.name: var.value for var in self._vars.values()}
+
     def set_constraint_violation_penalty(self, value: float):
         self._penalty = value
+
+    def get_objective_values(self) -> list[float]:
+        objs = list(obj.value for obj in self._objectives)
+        if self._penalty is not None:
+            objs.append(self._penalty)
+
+        return objs
 
     def insert_lt_zero_constraint(self, constraint: Expression):
         """
