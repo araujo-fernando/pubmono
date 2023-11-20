@@ -10,7 +10,7 @@ class Model:
         self._objectives: list[Expression] = list()
         self._vars: dict[str, RealVariable | BinVariable | IntVariable] = dict()
         self._constraints: list[Expression] = list()
-        self._penalty = None
+        self._penalty = 1e-3
 
     @property
     def num_vars(self):
@@ -104,13 +104,6 @@ class Model:
 
     def set_constraint_violation_penalty(self, value: float):
         self._penalty = value
-
-    def get_objective_values(self) -> list[float]:
-        objs = list(obj.value for obj in self._objectives)
-        if self._penalty is not None:
-            objs.append(self._penalty)
-
-        return objs
 
     def insert_lt_zero_constraint(self, constraint: Expression):
         """

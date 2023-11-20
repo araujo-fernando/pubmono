@@ -88,7 +88,10 @@ if __name__ == "__main__":
         with RecursionLimiter(1_000_000):
             print("PSO Solution:")
             pso = ParticleSwarmOptimizer(
-                model, max_iterations=PSO_ITERATIONS, num_particles=PSO_SWARM
+                model,
+                pso_population,
+                max_iterations=PSO_ITERATIONS,
+                num_particles=PSO_SWARM,
             )
             print("With costs:")
             pprint(pso.solution.objective_values)
