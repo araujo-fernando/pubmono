@@ -1,3 +1,4 @@
+from ast import In
 import re
 import sys
 
@@ -20,17 +21,19 @@ _FORBIDDEN_NAME_PATTERN = re.compile(r"[^A-Z0-9_]")
 
 
 class _Variable:
-    def __init__(self, name: str, lb=None, ub=None) -> None:
+    def __init__(
+        self, name: str, lb: float | int | None = None, ub: float | int | None = None
+    ) -> None:
         name = str(name).upper().replace(" ", "_")
         self.name = _FORBIDDEN_NAME_PATTERN.sub("", name)
         self.lb = lb if lb is not None else sys.float_info.min
         self.ub = ub if ub is not None else sys.float_info.max
 
-        self._value = 0 if lb is None else lb
+        self._value: float | int = 0 if self.lb <= 0 and self.ub >= 0 else self.lb
         self.type = None
 
     @property
-    def value(self):
+    def value(self) -> int | float:
         return self._value
 
     def set_value(self, v):
@@ -38,13 +41,20 @@ class _Variable:
 
     def set_random_value(self):
         val = rd.uniform(self.lb, self.ub)
-        self.value = val  # type: ignore
+        self._value = val
+        return val
+
+    def get_random_value(self):
+        val = rd.uniform(self.lb, self.ub)
         return val
 
     def __setattr__(self, name, value):
         if name == "value":
             self._value = np.clip(value, self.lb, self.ub)
         self.__dict__[name] = value
+
+    def __hash__(self) -> int:
+        return hash(self.name)
 
     def __repr__(self) -> str:
         return (

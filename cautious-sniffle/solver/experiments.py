@@ -25,7 +25,7 @@ def dump_json_results(
     num_vars = solution.num_vars
     num_constrs = len(solution._constraints)
     objectives = solution.objective_values
-    solution_variables_values = solution.export_solution
+    solution_variables_values = solution.variables_values
 
     if isinstance(optimizer, ParticleSwarmOptimizer):
         extension = "_pso.json"
@@ -392,14 +392,14 @@ def bark(model):
     pso = ParticleSwarmOptimizer(model, max_iterations=300, num_particles=500)
     best_individual = de.optimize()
     print("DE Solution:")
-    pprint({name: var._value for name, var in best_individual._vars.items()})
+    pprint({name: var._value for name, var in best_individual._variables.items()})
     print("With costs:")
     pprint(best_individual.objective_values)
     print(f"In {de.solve_time} seconds\n")
 
     best_particle = pso.optimize()
     print("PSO Solution:")
-    pprint({name: var._value for name, var in best_particle._vars.items()})
+    pprint({name: var._value for name, var in best_particle._variables.items()})
     print("With costs:")
     pprint(best_particle.objective_values)
     print(f"In {pso.solve_time} seconds\n")

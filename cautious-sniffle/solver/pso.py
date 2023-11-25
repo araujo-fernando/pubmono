@@ -6,8 +6,8 @@ import numpy as np
 from copy import deepcopy
 from tqdm import tqdm
 from time import time
-from multiprocessing import Pool, cpu_count
 
+from .variables import RealVariable, BinVariable, IntVariable
 from .model import Model
 from .expression import Expression
 
@@ -25,7 +25,7 @@ class Particle:
             self.r1 = np.clip(r1, 0, 1)
 
         self.c1 = c1
-        self.variables_speed: dict[str, float] = dict()
+        self.variables_speed: dict[RealVariable | BinVariable | IntVariable, float] = dict()
         self.initialize_variables_and_speeds()
 
     @property
@@ -36,7 +36,7 @@ class Particle:
         return self._model.objective_values
 
     @property
-    def Pbest(self) -> dict[str, float]:
+    def Pbest(self) -> dict[RealVariable | BinVariable | IntVariable, float]:
         # p_best
         return deepcopy(self._best_pos)
 
@@ -90,13 +90,15 @@ class Particle:
             self._best_pos = self._model.variables_values
 
     def initialize_variables_and_speeds(self):
-        for var in self._model._vars:
-            self._model._vars[var].set_random_value()
+        self._model.set_random_variables_values()
+        for var in self._model.variables:
             self.variables_speed[var] = 0.0
 
-        self._update_best_position()
+        self.position = self._model.variables_values
+        self._best_pos = self.position
+        self._best_pos_obj = sum(self.objective_values)
 
-    def update_variables(self, var_values: dict[str, float], iter=0):
+    def update_variables(self, var_values: dict[RealVariable | BinVariable | IntVariable, float], iter=0):
         self._model.set_variables_values(var_values)
         self._update_best_position(iter=iter)
 
@@ -107,7 +109,7 @@ class Particle:
         r1 = self.r1
         c1 = self.c1
 
-        def compute_speed(var: str):
+        def compute_speed(var: RealVariable | BinVariable | IntVariable):
             return (
                 theta * v[var]
                 + c1 * r1 * (Pbest[var] - x[var])
@@ -123,7 +125,7 @@ class Particle:
         r1 = self.r1
         c1 = self.c1
 
-        def compute_speed(var: str):
+        def compute_speed(var: RealVariable | BinVariable | IntVariable):
             return (
                 theta * v[var]
                 + c1 * r1 * (Pbest[var] - x[var])
@@ -137,18 +139,10 @@ class Particle:
         self.variables_speed = new_v
 
 
-def compute_individual_objectives(population, j):
-    individual = population[j]
-    objectives = individual.objective_values
-    obj = sum(objectives)
-    
-    return objectives, obj
-
 class ParticleSwarmOptimizer:
     def __init__(
         self,
         model: Model,
-        population,
         num_particles,
         max_iterations,
         **kwargs,
@@ -185,19 +179,19 @@ class ParticleSwarmOptimizer:
         else:
             self.r2 = np.clip(r2, 0, 1)
 
-        print("Creating population:")
-        for _ in tqdm(range(self.num_particles)):
-            population.append(Particle(model.copy()))
-        self._population = population
+        self._population = [
+            Particle(model.copy(), c1=self.c2, r1=self.r2)
+            for _ in tqdm(
+                range(self.num_particles), desc="Creating population", position=0
+            )
+        ]
 
         self.evolution_data: list[list[list[float]]] = list()
         self.solve_time = None
         self.solution = self.model
 
-    def optimize(self, population, use_convergence_criteria: bool = False):
+    def optimize(self, use_convergence_criteria: bool = False):
         start_time = time()
-        workers = max(cpu_count() - 2, 1)
-        print(f"Workers: {workers}")
 
         r2 = self.r2
         c2 = self.c2
@@ -206,31 +200,35 @@ class ParticleSwarmOptimizer:
         it_max = self.max_iterations
 
         best_particle = 0
-        Gbest_obj = population[best_particle].Pbest_obj
-        for it in tqdm(range(it_max)):
-            Gbest_pos = population[best_particle].Pbest
-            Gbest_obj = sum(population[best_particle].objective_values)
-            obj_pool = list()
+        Gbest_obj = self._population[best_particle].Pbest_obj
+
+        for it in tqdm(range(it_max), desc="Generation", position=1):
+            Gbest_pos = self._population[best_particle].Pbest
+            Gbest_obj = sum(self._population[best_particle].objective_values)
             theta = theta_max - (theta_max - theta_min) / it_max * it
 
-            with Pool(processes=workers) as pool:
-                results = pool.starmap(
-                    compute_individual_objectives,
-                    [[population, j] for j in range(self.num_particles)],
+            obj_pool = [
+                particle.objective_values
+                for particle in tqdm(
+                    self._population,
+                    desc="Computing objectives",
+                    position=0,
+                    leave=False,
                 )
+            ]
 
-                obj_pool = [val[0] for val in results]
-                obj_values = [val[1] for val in results]
-                best_particle = obj_values.index(max(obj_values))
-                Gbest_obj = obj_values[best_particle]
-                Gbest_pos = population[best_particle].Pbest
- 
-                pool.starmap(
-                    Particle.update_variables_speed_and_variables,
-                    [
-                        [population[j], r2, c2, theta, Gbest_pos, it]
-                        for j in range(self.num_particles)
-                    ],
+            obj_sum = [sum(objs) for objs in obj_pool]
+            best_particle = obj_sum.index(max(obj_sum))
+            Gbest_pos = self._population[best_particle].Pbest
+
+            for j in tqdm(
+                range(self.num_particles),
+                desc="Updating particles",
+                position=0,
+                leave=False,
+            ):
+                self._population[j].update_variables_speed_and_variables(
+                    r2, c2, theta, Gbest_pos, it
                 )
 
             self.evolution_data.append(obj_pool)
@@ -239,10 +237,10 @@ class ParticleSwarmOptimizer:
                     break
 
         for j in range(self.num_particles):
-            p = population[j]
+            p = self._population[j]
             if sum(p.objective_values) > Gbest_obj:
                 best_particle = j
-        solution = population[best_particle]._model
+        solution = self._population[best_particle]._model
         stop_time = time()
         self.solve_time = stop_time - start_time
 

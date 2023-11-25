@@ -3,30 +3,25 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from pprint import pprint
-from multiprocessing import Manager, freeze_support
 
 from solver import *
 
 PLOT = False
-DATA_PATH = "dados/elfa"
+DATA_PATH = None # "data/elfa"
 ## CONFIGURAÇÕES PARA SOLVERS
 ENABLE_PSO = False
 ENABLE_DE = True
 
-PSO_SWARM = 50
-DE_POPULATION = 25
+PSO_SWARM = 2
+DE_POPULATION = 2
 
-PSO_ITERATIONS = 0
+PSO_ITERATIONS = 3
 DE_ITERATIONS = 3
 ## CONFIGURAÇÕES PARA MONTAGEM DO PROBLEMA
 T = 60
 
 
 if __name__ == "__main__":
-    manager = Manager()
-    de_population = manager.list()
-    pso_population = manager.list()
-
     if DATA_PATH:
         model, gen_time = assemble_model_from_data(
             DATA_PATH, "Fornecedor", "Cliente", T
@@ -35,7 +30,7 @@ if __name__ == "__main__":
         model, gen_time = assemble_model(10, T)
 
     print("\nModel Statistics:")
-    print(f"{len(model._vars)} variables")
+    print(f"{len(model._variables)} variables")
     print(f"{len(model._constraints)} constraints")
     print(f"Created in {gen_time} seconds\n")
 
@@ -43,12 +38,11 @@ if __name__ == "__main__":
         with RecursionLimiter(1_000_000):
             de = DifferentialEvolutionOptimizer(
                 model,
-                de_population,
                 max_iterations=DE_ITERATIONS,
                 num_individuals=DE_POPULATION,
             )
             print("DE Solution:")
-            de.optimize(de_population)
+            de.optimize()
             print("With costs:")
             pprint(de.solution.objective_values)
             print(f"In {de.solve_time} seconds\n")
@@ -89,11 +83,11 @@ if __name__ == "__main__":
             print("PSO Solution:")
             pso = ParticleSwarmOptimizer(
                 model,
-                pso_population,
                 max_iterations=PSO_ITERATIONS,
                 num_particles=PSO_SWARM,
             )
             print("With costs:")
+            pso.optimize()
             pprint(pso.solution.objective_values)
             print(f"In {pso.solve_time} seconds\n")
 
