@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from multiprocessing import cpu_count
+
 import random as rd
 import numpy as np
 
 from copy import deepcopy
 from tqdm import tqdm
 from time import time
+
+from solver.de import Individual
 
 from .variables import RealVariable, BinVariable, IntVariable
 from .model import Model
@@ -25,15 +30,14 @@ class Particle:
             self.r1 = np.clip(r1, 0, 1)
 
         self.c1 = c1
-        self.variables_speed: dict[RealVariable | BinVariable | IntVariable, float] = dict()
+        self.variables_speed: dict[
+            RealVariable | BinVariable | IntVariable, float
+        ] = dict()
         self.initialize_variables_and_speeds()
 
     @property
     def objective_values(self) -> list[float]:
-        self._model.set_constraint_violation_penalty(
-            self._evaluate_constraint_penalties(self._current_iter)
-        )
-        return self._model.objective_values
+        return self.get_objective_values()
 
     @property
     def Pbest(self) -> dict[RealVariable | BinVariable | IntVariable, float]:
@@ -43,6 +47,12 @@ class Particle:
     @property
     def Pbest_obj(self):
         return self._best_pos_obj
+
+    def get_objective_values(self) -> list[float]:
+        self._model.set_constraint_violation_penalty(
+            self._evaluate_constraint_penalties(self._current_iter)
+        )
+        return self._model.objective_values
 
     def _evaluate_constraint_penalties(
         self, iter: int, c: float = 0.5, alpha=2, a=150, b=10
@@ -98,7 +108,9 @@ class Particle:
         self._best_pos = self.position
         self._best_pos_obj = sum(self.objective_values)
 
-    def update_variables(self, var_values: dict[RealVariable | BinVariable | IntVariable, float], iter=0):
+    def update_variables(
+        self, var_values: dict[RealVariable | BinVariable | IntVariable, float], iter=0
+    ):
         self._model.set_variables_values(var_values)
         self._update_best_position(iter=iter)
 
@@ -207,28 +219,24 @@ class ParticleSwarmOptimizer:
             Gbest_obj = sum(self._population[best_particle].objective_values)
             theta = theta_max - (theta_max - theta_min) / it_max * it
 
-            obj_pool = [
-                particle.objective_values
-                for particle in tqdm(
+            obj_pool = list()
+            with ProcessPoolExecutor(max(1, cpu_count() - 2)) as executor:
+                futures = [
+                    executor.submit(Particle.get_objective_values, particle)
+                    for particle in self._population
+                ]
+                for future in as_completed(futures):
+                    obj_pool.append(future.result())
+
+                obj_sum = [sum(objs) for objs in obj_pool]
+                best_particle = obj_sum.index(max(obj_sum))
+                Gbest_pos = self._population[best_particle].Pbest
+
+                executor.map(
+                    lambda particle: particle.update_variables_speed_and_variables(
+                        r2, c2, theta, Gbest_pos, it
+                    ),
                     self._population,
-                    desc="Computing objectives",
-                    position=0,
-                    leave=False,
-                )
-            ]
-
-            obj_sum = [sum(objs) for objs in obj_pool]
-            best_particle = obj_sum.index(max(obj_sum))
-            Gbest_pos = self._population[best_particle].Pbest
-
-            for j in tqdm(
-                range(self.num_particles),
-                desc="Updating particles",
-                position=0,
-                leave=False,
-            ):
-                self._population[j].update_variables_speed_and_variables(
-                    r2, c2, theta, Gbest_pos, it
                 )
 
             self.evolution_data.append(obj_pool)

@@ -44,7 +44,7 @@ if __name__ == "__main__":
                 num_individuals=DE_POPULATION,
             )
             de.optimize()
-            print("With costs:")
+            print("\nWith costs:")
             pprint(de.solution.objective_values)
             print(f"In {de.solve_time} seconds\n")
 
@@ -86,7 +86,7 @@ if __name__ == "__main__":
                 max_iterations=PSO_ITERATIONS,
                 num_particles=PSO_SWARM,
             )
-            print("With costs:")
+            print("\nWith costs:")
             pso.optimize()
             pprint(pso.solution.objective_values)
             print(f"In {pso.solve_time} seconds\n")
