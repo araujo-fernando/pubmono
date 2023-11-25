@@ -1,31 +1,31 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import seaborn as sns
 
 from pprint import pprint
 
 from solver import *
 
-PLOT = False
-DATA_PATH = "data/elfa"
+PLOT = True
+INSTANCE = "elfa"
+NUM_SKUS = 1
+filtro_skus = ["NUTRICAO", "MATERIAIS", "GENERICO", "ESPECIALIDADES", "SIMILAR"]
 ## CONFIGURAÇÕES PARA SOLVERS
 ENABLE_PSO = True
-ENABLE_DE = True
+ENABLE_DE = False
 
-PSO_SWARM = 2
-DE_POPULATION = 2
+PSO_SWARM = 300
+DE_POPULATION = 100
 
-PSO_ITERATIONS = 3
-DE_ITERATIONS = 3
+PSO_ITERATIONS = 10_000
+DE_ITERATIONS = 10_000
 ## CONFIGURAÇÕES PARA MONTAGEM DO PROBLEMA
-T = 60
-
-filtro_skus_elfa = ["NUTRICAO", "MATERIAIS", "GENERICO", "ESPECIALIDADES", "SIMILAR"]
+T = 360
+DATA_PATH = f"data/{INSTANCE}"
 
 if __name__ == "__main__":
     if DATA_PATH:
         model, gen_time = assemble_model_from_data(
-            DATA_PATH, "Fornecedor", "Cliente", T, filtro_skus_elfa[0:1]
+            DATA_PATH, "Fornecedor", "Cliente", T, filtro_skus[0:NUM_SKUS]
         )
     else:
         model, gen_time = assemble_model(10, T)
@@ -73,10 +73,14 @@ if __name__ == "__main__":
             penalties = (penalties - min_value) / (max_value - min_value)
 
             objs_evo = sns.heatmap(objectives)
-            plt.show()
+            fig = objs_evo.get_figure()
+            if fig is not None:
+                fig.savefig(f"de_model_{INSTANCE}_{NUM_SKUS}_{T}_objs.png")
 
             pen_evo = sns.heatmap(penalties)
-            plt.show()
+            fig = objs_evo.get_figure()
+            if fig is not None:
+                fig.savefig(f"de_model_{INSTANCE}_{NUM_SKUS}_{T}_pen.png")
 
     if ENABLE_PSO:
         with RecursionLimiter(1_000):
@@ -116,7 +120,11 @@ if __name__ == "__main__":
             penalties = (penalties - min_value) / (max_value - min_value)
 
             objs_evo = sns.heatmap(objectives)
-            plt.show()
+            fig = objs_evo.get_figure()
+            if fig is not None:
+                fig.savefig(f"pso_model_{INSTANCE}_{NUM_SKUS}_{T}_objs.png")
 
             pen_evo = sns.heatmap(penalties)
-            plt.show()
+            fig = objs_evo.get_figure()
+            if fig is not None:
+                fig.savefig(f"pso_model_{INSTANCE}_{NUM_SKUS}_{T}_pen.png")
