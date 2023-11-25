@@ -1,4 +1,3 @@
-from pprint import pprint
 from concurrent.futures import ProcessPoolExecutor
 
 from model import Model

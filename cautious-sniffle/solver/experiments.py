@@ -121,11 +121,12 @@ def assemble_model(TOTAL_NOS=10, T=60) -> tuple[Model, float]:
         sum(
             sum(
                 (
-                    (p_1_m[m] - p_0_m[m]) * s_0_i_m.get((i, m), 0)
-                    - (p_1_m[m] - p_2_m[m]) * s_1_i_m.get((i, m), 0)
-                    - (p_2_m[m] + h_m[m]) * s_2_i_m.get((i, m), 0)
+                    (p_1_m[m] - p_0_m[m]) * s_0_i_m[(i, m)]
+                    - (p_1_m[m] - p_2_m[m]) * s_1_i_m[(i, m)]
+                    - (p_2_m[m] + h_m[m]) * s_2_i_m[(i, m)]
                 )
                 for m in mercadorias
+                if (i, m) in nos_intermediarios
             )
             for i in nos_clientes
         )
@@ -216,7 +217,13 @@ def assemble_model(TOTAL_NOS=10, T=60) -> tuple[Model, float]:
     return model, (end_time - start_time)
 
 
-def assemble_model_from_data(path: str, source_level_name: str, sink_level_name: str, T=60) -> tuple[Model, float]:
+def assemble_model_from_data(
+    path: str,
+    source_level_name: str,
+    sink_level_name: str,
+    T: int = 60,
+    sku_filter: list[str] | None = None,
+) -> tuple[Model, float]:
     print(f"Assembling model")
     model = Model()
 
@@ -229,47 +236,87 @@ def assemble_model_from_data(path: str, source_level_name: str, sink_level_name:
     tabela_frete = pd.read_csv(f"{path}/frete.csv")
     tabela_nos = pd.read_csv(f"{path}/nos_anonim.csv")
     tabela_preco = pd.read_csv(f"{path}/valor_mercadoria.csv")
-    tabela_skus = pd.read_csv(f"{path}/skus_anonim.csv")
+    tabela_skus = pd.read_csv(f"{path}/skus.csv")
+
+    filtro_mercadoria = tabela_skus["listaDeSkus"] == tabela_skus["listaDeSkus"]
+    if sku_filter:
+        for sku_name in sku_filter:
+            filtro_mercadoria = filtro_mercadoria & (
+                tabela_skus["listaDeSkus"].str.contains(sku_name)
+            )
 
     mercadorias = tabela_skus["ids"].tolist()
+
     nos = tabela_nos["idn"].tolist()
     nos_clientes = tabela_nos[tabela_nos["nivel"] == sink_level_name]["idn"].tolist()
-    nos_fornecedores = tabela_nos[tabela_nos["nivel"] == source_level_name]["idn"].tolist()
+    nos_fornecedores = tabela_nos[tabela_nos["nivel"] == source_level_name][
+        "idn"
+    ].tolist()
     nos_intermediarios = list(set(nos) - set(nos_clientes) - set(nos_fornecedores))
 
-    todos_pares = tabela_frete[["origem", "destino"]].drop_duplicates().values.tolist()  
-    todos_pares_mercadorias = tabela_frete[["origem", "destino", "sku"]].drop_duplicates().values.tolist()
+    todos_pares = tabela_frete[["origem", "destino"]].drop_duplicates().values.tolist()
+    filtro_mercadoria = tabela_frete["sku"].isin(mercadorias)
+    todos_pares_mercadorias = (
+        tabela_frete[filtro_mercadoria][["origem", "destino", "sku"]]
+        .drop_duplicates()
+        .values.tolist()
+    )
     todos_pares_mercadorias = list(map(tuple, todos_pares_mercadorias))
 
-    fornecedores_mercadorias = tabela_frete[tabela_frete["origem"].isin(nos_fornecedores)][["origem", "sku"]].drop_duplicates().values.tolist()  
+    filtro_mercadoria = tabela_frete["sku"].isin(mercadorias)
+    filtro_fornecedores = tabela_frete["origem"].isin(nos_fornecedores)
+    filtro = filtro_mercadoria & filtro_fornecedores
+    fornecedores_mercadorias = (
+        tabela_frete[filtro][["origem", "sku"]].drop_duplicates().values.tolist()
+    )
     fornecedores_mercadorias = list(map(tuple, fornecedores_mercadorias))
 
     ## GERAÇÃO DAS VARIÁVEIS
     print(f"\tCreating variables")
-    preco_max = 10**(math.log10(tabela_preco["valorMercadoria"].max())//1+1)
+    preco_max = 10 ** (math.log10(tabela_preco["valorMercadoria"].max()) // 1 + 1)
     p_0_m = model.create_real_variables("p_0_", mercadorias, lb=0, ub=preco_max)
     p_1_m = model.create_real_variables("p_1_", mercadorias, lb=0, ub=preco_max)
     p_2_m = model.create_real_variables("p_2_", mercadorias, lb=0, ub=preco_max)
 
-    demanda_total = 10**(math.log10(tabela_demanda["demanda"].sum())//1+1)
-    s_0_i_m = model.create_integer_variables("s_0_", nos_intermediarios, lb=0, ub=demanda_total)
-    s_1_i_m = model.create_integer_variables("s_1_", nos_intermediarios, lb=0, ub=demanda_total)
-    s_2_i_m = model.create_integer_variables("s_2_", nos_intermediarios, lb=0, ub=demanda_total)
+    demanda_total = 10 ** (math.log10(tabela_demanda["demanda"].sum()) // 1 + 1)
+    s_0_i_m = model.create_integer_variables(
+        "s_0_", nos_intermediarios, lb=0, ub=demanda_total
+    )
+    s_1_i_m = model.create_integer_variables(
+        "s_1_", nos_intermediarios, lb=0, ub=demanda_total
+    )
+    s_2_i_m = model.create_integer_variables(
+        "s_2_", nos_intermediarios, lb=0, ub=demanda_total
+    )
 
     b_i = model.create_binary_variables("b_", nos)
 
-    frete_max = 10**(math.log10(tabela_frete["custo"].max())//1+1)
-    c_i_j_m = model.create_real_variables("c_", todos_pares_mercadorias, lb=0, ub=frete_max)
-    f_i_j_m = model.create_real_variables("f_", todos_pares_mercadorias, lb=0, ub=demanda_total)
-    g_j_m = model.create_integer_variables("g_", fornecedores_mercadorias, lb=0, ub=demanda_total)
+    frete_max = 10 ** (math.log10(tabela_frete["custo"].max()) // 1 + 1)
+    c_i_j_m = model.create_real_variables(
+        "c_", todos_pares_mercadorias, lb=0, ub=frete_max
+    )
+    f_i_j_m = model.create_real_variables(
+        "f_", todos_pares_mercadorias, lb=0, ub=demanda_total
+    )
+    g_j_m = model.create_integer_variables(
+        "g_", fornecedores_mercadorias, lb=0, ub=demanda_total
+    )
     w = model.create_real_variable("w", lb=0, ub=T)
 
     ## GERAÇÃO DAS CONSTANTES
     print(f"\tLoading constants")
-    d_j_m = pd.DataFrame(tabela_demanda.groupby(["no", "sku"])["demanda"].sum()).to_dict()
-    h_i_m = {(i, m): h for i, h in tabela_custo_nos[["no", "capFornecimento"]].values for m in mercadorias}
+    d_j_m = pd.DataFrame(
+        tabela_demanda.groupby(["no", "sku"])["demanda"].sum()
+    ).to_dict()
+    h_i_m = {
+        (i, m): h
+        for i, h in tabela_custo_nos[["no", "capFornecimento"]].values
+        for m in mercadorias
+    }
     e_i = tabela_custo_nos.set_index("no")["capExpedicao"].to_dict()
-    h_m = pd.DataFrame(0.1*tabela_preco.groupby("sku")["valorMercadoria"].mean()).to_dict()
+    h_m = pd.DataFrame(
+        0.1 * tabela_preco.groupby("sku")["valorMercadoria"].mean()
+    ).to_dict()
     v_i = tabela_custo_nos.set_index("no")["custoVariavelExpedicao"].to_dict()
     u_i = tabela_custo_nos.set_index("no")["custoFixo"].to_dict()
 
@@ -285,11 +332,12 @@ def assemble_model_from_data(path: str, source_level_name: str, sink_level_name:
         sum(
             sum(
                 (
-                    (p_1_m.get(m, 0) - p_0_m.get(m, 0)) * s_0_i_m.get((i, m), 0)
-                    - (p_1_m.get(m, 0) - p_2_m.get(m, 0)) * s_1_i_m.get((i, m), 0)
-                    - (p_2_m.get(m, 0) + h_m.get(m, 0)) * s_2_i_m.get((i, m), 0)
+                    (p_1_m.get(m, 0) - p_0_m.get(m, 0)) * s_0_i_m[(i, m)]
+                    - (p_1_m.get(m, 0) - p_2_m.get(m, 0)) * s_1_i_m[(i, m)]
+                    - (p_2_m.get(m, 0) + h_m.get(m, 0)) * s_2_i_m[(i, m)]
                 )
                 for m in mercadorias
+                if (i, m) in nos_intermediarios
             )
             for i in nos_clientes
         )
@@ -300,7 +348,7 @@ def assemble_model_from_data(path: str, source_level_name: str, sink_level_name:
             )
             for m in mercadorias
         )
-        - sum(u_i.get(i, 0) * b_i[i] for i in nos)
+        - sum(u_i[i] * b_i[i] for i in nos if i in u_i)
     )
 
     model.set_objective(objetivo)
@@ -383,7 +431,6 @@ def assemble_model_from_data(path: str, source_level_name: str, sink_level_name:
     print(f"Model assembled finished")
 
     return model, (end_time - start_time)
-
 
 
 def bark(model):

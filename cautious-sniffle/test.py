@@ -15,8 +15,8 @@ ENABLE_DE = True
 PSO_SWARM = 1_000
 DE_POPULATION = 1_000
 
-PSO_ITERATIONS = 1_000
-DE_ITERATIONS = 1_000
+PSO_ITERATIONS = 10_000
+DE_ITERATIONS = 10_000
 
 
 def create_test_model():
@@ -26,18 +26,23 @@ def create_test_model():
     x = model.create_real_variable("x", lb=-100, ub=100)
     y = model.create_integer_variable("y", lb=-100, ub=100)
 
-    hiperboloide = 12 * x + y**3 - 120
+    x.set_value(75)
+    y.set_value(75)
+
+    hiperboloide = 12 * x + y**2 - 120
     print(f"Objective:\n\t{hiperboloide}")
+    print(f"\nExpected solution:\n\tX={x.value}\n\tY={y.value}")
+    print(f"\nExpected objective value:\n\t{hiperboloide.value}")
     model.set_objective(hiperboloide)
 
     restricoes_caixa = [
-        x - 50,
-        y - 50,
+        50 - x,
+        50 - y,
         x - 75,
         y - 75,
     ]
     model.insert_lt_zero_constraints(restricoes_caixa)
-    print("Constraints:\n\t0<=X<=10\n\t0<=Y<=10")
+    print("\nConstraints:\n\t0<=X<=10\n\t0<=Y<=10")
     end_time = time()
 
     return model, (end_time - start_time)
@@ -50,22 +55,20 @@ if __name__ == "__main__":
     print(f"{len(model._variables)} variables")
     print(f"{len(model._constraints)} constraints")
     print(f"Created in {gen_time} seconds\n")
-    print("Expected solution:\n\t[X,Y] = [10, 10]\n\tf(X,Y) = 1000\n")
 
     if ENABLE_DE:
-        with RecursionLimiter(1_000_000):
-            de = DifferentialEvolutionOptimizer(
-                model,
-                num_individuals=DE_POPULATION,
-                max_iterations=DE_ITERATIONS,
-            )
-            print("DE Solution:")
-            de.optimize()
-            print("With costs:")
-            pprint(de.solution.objective_values)
-            print(f"In {de.solve_time} seconds\n")
-            print("Solution variables:")
-            pprint(de.solution.get_variables_values())
+        print("\nDE Solution:")
+        de = DifferentialEvolutionOptimizer(
+            model,
+            num_individuals=DE_POPULATION,
+            max_iterations=DE_ITERATIONS,
+        )
+        de.optimize()
+        print("With costs:")
+        pprint(de.solution.objective_values)
+        print(f"In {de.solve_time} seconds\n")
+        print("Solution variables:")
+        pprint(de.solution.get_variables_values())
 
         ## DE METRICS
         if PLOT:
@@ -99,19 +102,18 @@ if __name__ == "__main__":
             plt.show()
 
     if ENABLE_PSO:
-        with RecursionLimiter(1_000_000):
-            pso = ParticleSwarmOptimizer(
-                model,
-                num_particles=PSO_SWARM,
-                max_iterations=PSO_ITERATIONS,
-            )
-            print("PSO Solution:")
-            pso.optimize()
-            print("With costs:")
-            pprint(pso.solution.objective_values)
-            print(f"In {pso.solve_time} seconds\n")
-            print("Solution variables:")
-            pprint(pso.solution.get_variables_values())
+        print("\nPSO Solution:")
+        pso = ParticleSwarmOptimizer(
+            model,
+            num_particles=PSO_SWARM,
+            max_iterations=PSO_ITERATIONS,
+        )
+        pso.optimize()
+        print("With costs:")
+        pprint(pso.solution.objective_values)
+        print(f"In {pso.solve_time} seconds\n")
+        print("Solution variables:")
+        pprint(pso.solution.get_variables_values())
 
         ## PSO METRICS
         if PLOT:

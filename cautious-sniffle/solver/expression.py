@@ -1,4 +1,3 @@
-from copy import deepcopy
 from typing import Union
 import warnings
 
@@ -51,10 +50,11 @@ class Expression:
     @property
     def value(self) -> Union[float, int]:
         result = 0
-        for position in range(1, len(self.a)):
+        for position in range(len(self.a)):
             val_a = self.a[position]
             val_b = self.b[position]
             op = self.op[position]
+
             if val_a is None:
                 left_value = result
             else:
@@ -87,22 +87,17 @@ class Expression:
         for position in range(len(self.a)):
             val_a = self.a[position]
             val_b = self.b[position]
-            op = self.op[position]
+            op_name = self.op[position].__name__
+            op = _OPERADORES.get(op_name, op_name)
             if val_a is None:
                 left_value = representation
             else:
-                try:
-                    left_value = val_a.value
-                except AttributeError:
-                    left_value = val_a
+                left_value = val_a
 
             if val_b is None:
                 right_value = representation
             else:
-                try:
-                    right_value = val_b.value
-                except AttributeError:
-                    right_value = val_b
+                right_value = val_b
 
             representation = f"({left_value} {op} {right_value})"
 
@@ -117,22 +112,17 @@ class Expression:
         for position in range(len(self.a)):
             val_a = self.a[position]
             val_b = self.b[position]
-            op = self.op[position]
+            op_name = self.op[position].__name__
+            op = _OPERADORES.get(op_name, op_name)
             if val_a is None:
                 left_value = representation
             else:
-                try:
-                    left_value = val_a.value
-                except AttributeError:
-                    left_value = val_a
+                left_value = val_a
 
             if val_b is None:
                 right_value = representation
             else:
-                try:
-                    right_value = val_b.value
-                except AttributeError:
-                    right_value = val_b
+                right_value = val_b
 
             representation = f"({left_value} {op} {right_value})"
 
@@ -143,9 +133,9 @@ class Expression:
             None,
             op.add,
             other,
-            lefts=deepcopy(self.a),
-            operators=deepcopy(self.op),
-            rights=deepcopy(self.b),
+            lefts=self.a.copy(),
+            operators=self.op.copy(),
+            rights=self.b.copy(),
         )
 
     def __sub__(self, other):
@@ -153,9 +143,9 @@ class Expression:
             None,
             op.sub,
             other,
-            lefts=deepcopy(self.a),
-            operators=deepcopy(self.op),
-            rights=deepcopy(self.b),
+            lefts=self.a.copy(),
+            operators=self.op.copy(),
+            rights=self.b.copy(),
         )
 
     def __mul__(self, other):
@@ -163,9 +153,9 @@ class Expression:
             None,
             op.mul,
             other,
-            lefts=deepcopy(self.a),
-            operators=deepcopy(self.op),
-            rights=deepcopy(self.b),
+            lefts=self.a.copy(),
+            operators=self.op.copy(),
+            rights=self.b.copy(),
         )
 
     def __truediv__(self, other):
@@ -173,9 +163,9 @@ class Expression:
             None,
             op.truediv,
             other,
-            lefts=deepcopy(self.a),
-            operators=deepcopy(self.op),
-            rights=deepcopy(self.b),
+            lefts=self.a.copy(),
+            operators=self.op.copy(),
+            rights=self.b.copy(),
         )
 
     def __floordiv__(self, other):
@@ -183,9 +173,9 @@ class Expression:
             None,
             op.floordiv,
             other,
-            lefts=deepcopy(self.a),
-            operators=deepcopy(self.op),
-            rights=deepcopy(self.b),
+            lefts=self.a.copy(),
+            operators=self.op.copy(),
+            rights=self.b.copy(),
         )
 
     def __pow__(self, other):
@@ -193,9 +183,9 @@ class Expression:
             None,
             op.pow,
             other,
-            lefts=deepcopy(self.a),
-            operators=deepcopy(self.op),
-            rights=deepcopy(self.b),
+            lefts=self.a.copy(),
+            operators=self.op.copy(),
+            rights=self.b.copy(),
         )
 
     def __lt__(self, other):
@@ -203,9 +193,9 @@ class Expression:
             None,
             op.lt,
             other,
-            lefts=deepcopy(self.a),
-            operators=deepcopy(self.op),
-            rights=deepcopy(self.b),
+            lefts=self.a.copy(),
+            operators=self.op.copy(),
+            rights=self.b.copy(),
         )
 
     def __le__(self, other):
@@ -213,9 +203,9 @@ class Expression:
             None,
             op.le,
             other,
-            lefts=deepcopy(self.a),
-            operators=deepcopy(self.op),
-            rights=deepcopy(self.b),
+            lefts=self.a.copy(),
+            operators=self.op.copy(),
+            rights=self.b.copy(),
         )
 
     def __eq__(self, other):
@@ -223,9 +213,9 @@ class Expression:
             None,
             op.eq,
             other,
-            lefts=deepcopy(self.a),
-            operators=deepcopy(self.op),
-            rights=deepcopy(self.b),
+            lefts=self.a.copy(),
+            operators=self.op.copy(),
+            rights=self.b.copy(),
         )
 
     def __ge__(self, other):
@@ -233,9 +223,9 @@ class Expression:
             None,
             op.ge,
             other,
-            lefts=deepcopy(self.a),
-            operators=deepcopy(self.op),
-            rights=deepcopy(self.b),
+            lefts=self.a.copy(),
+            operators=self.op.copy(),
+            rights=self.b.copy(),
         )
 
     def __gt__(self, other):
@@ -243,9 +233,9 @@ class Expression:
             None,
             op.gt,
             other,
-            lefts=deepcopy(self.a),
-            operators=deepcopy(self.op),
-            rights=deepcopy(self.b),
+            lefts=self.a.copy(),
+            operators=self.op.copy(),
+            rights=self.b.copy(),
         )
 
     def __radd__(self, other):
@@ -253,9 +243,9 @@ class Expression:
             other,
             op.add,
             None,
-            lefts=deepcopy(self.a),
-            operators=deepcopy(self.op),
-            rights=deepcopy(self.b),
+            lefts=self.a.copy(),
+            operators=self.op.copy(),
+            rights=self.b.copy(),
         )
 
     def __rsub__(self, other):
@@ -263,9 +253,9 @@ class Expression:
             other,
             op.sub,
             None,
-            lefts=deepcopy(self.a),
-            operators=deepcopy(self.op),
-            rights=deepcopy(self.b),
+            lefts=self.a.copy(),
+            operators=self.op.copy(),
+            rights=self.b.copy(),
         )
 
     def __rmul__(self, other):
@@ -273,9 +263,9 @@ class Expression:
             other,
             op.mul,
             None,
-            lefts=deepcopy(self.a),
-            operators=deepcopy(self.op),
-            rights=deepcopy(self.b),
+            lefts=self.a.copy(),
+            operators=self.op.copy(),
+            rights=self.b.copy(),
         )
 
     def __rtruediv__(self, other):
@@ -283,9 +273,9 @@ class Expression:
             other,
             op.truediv,
             None,
-            lefts=deepcopy(self.a),
-            operators=deepcopy(self.op),
-            rights=deepcopy(self.b),
+            lefts=self.a.copy(),
+            operators=self.op.copy(),
+            rights=self.b.copy(),
         )
 
     def __rfloordiv__(self, other):
@@ -293,9 +283,9 @@ class Expression:
             other,
             op.floordiv,
             None,
-            lefts=deepcopy(self.a),
-            operators=deepcopy(self.op),
-            rights=deepcopy(self.b),
+            lefts=self.a.copy(),
+            operators=self.op.copy(),
+            rights=self.b.copy(),
         )
 
     def __rpow__(self, other):
@@ -303,9 +293,9 @@ class Expression:
             other,
             op.pow,
             None,
-            lefts=deepcopy(self.a),
-            operators=deepcopy(self.op),
-            rights=deepcopy(self.b),
+            lefts=self.a.copy(),
+            operators=self.op.copy(),
+            rights=self.b.copy(),
         )
 
     def __rlt__(self, other):
@@ -313,9 +303,9 @@ class Expression:
             other,
             op.lt,
             None,
-            lefts=deepcopy(self.a),
-            operators=deepcopy(self.op),
-            rights=deepcopy(self.b),
+            lefts=self.a.copy(),
+            operators=self.op.copy(),
+            rights=self.b.copy(),
         )
 
     def __rle__(self, other):
@@ -323,9 +313,9 @@ class Expression:
             other,
             op.le,
             None,
-            lefts=deepcopy(self.a),
-            operators=deepcopy(self.op),
-            rights=deepcopy(self.b),
+            lefts=self.a.copy(),
+            operators=self.op.copy(),
+            rights=self.b.copy(),
         )
 
     def __req__(self, other):
@@ -333,9 +323,9 @@ class Expression:
             other,
             op.eq,
             None,
-            lefts=deepcopy(self.a),
-            operators=deepcopy(self.op),
-            rights=deepcopy(self.b),
+            lefts=self.a.copy(),
+            operators=self.op.copy(),
+            rights=self.b.copy(),
         )
 
     def __rge__(self, other):
@@ -343,9 +333,9 @@ class Expression:
             other,
             op.ge,
             None,
-            lefts=deepcopy(self.a),
-            operators=deepcopy(self.op),
-            rights=deepcopy(self.b),
+            lefts=self.a.copy(),
+            operators=self.op.copy(),
+            rights=self.b.copy(),
         )
 
     def __rgt__(self, other):
@@ -353,7 +343,7 @@ class Expression:
             other,
             op.gt,
             None,
-            lefts=deepcopy(self.a),
-            operators=deepcopy(self.op),
-            rights=deepcopy(self.b),
+            lefts=self.a.copy(),
+            operators=self.op.copy(),
+            rights=self.b.copy(),
         )
