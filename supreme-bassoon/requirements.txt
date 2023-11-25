@@ -1,0 +1,4 @@
+pandas>=2.0.0
+gurobipy>=10.0.2
+tqdm>=4.66.0
+plotly>=5.16.0
